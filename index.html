@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mechanical Properties Web</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  margin-top: 100px;
+}
+
+input {
+  padding: 10px;
+  font-size: 18px;
+  width: 300px;
+}
+
+.popup {
+  position: fixed;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 20px;
+  border: 2px solid black;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.hidden {
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Mechanical Properties Finder</h1>
+<p>Enter material name (steel, aluminum, copper) and press Enter</p>
+
+<input id="materialInput" placeholder="Enter material..." />
+
+<!-- Popup 1 -->
+<div id="popup1" class="popup hidden"></div>
+
+<!-- Popup 2 -->
+<div id="popup2" class="popup hidden">
+  <canvas id="chart" width="400" height="300"></canvas>
+</div>
+
+<script>
+
+// ===== 材料資料 =====
+const materials = {
+  steel: {
+    fracture_toughness: "50 MPa√m",
+    tensile_strength: "400 MPa",
+    youngs_modulus: "200 GPa",
+    poisson_ratio: "0.30",
+    stress_strain: [
+      {x:0, y:0},
+      {x:0.01, y:200},
+      {x:0.02, y:300},
+      {x:0.03, y:350},
+      {x:0.05, y:400}
+    ]
+  },
+
+  aluminum: {
+    fracture_toughness: "30 MPa√m",
+    tensile_strength: "250 MPa",
+    youngs_modulus: "70 GPa",
+    poisson_ratio: "0.33",
+    stress_strain: [
+      {x:0, y:0},
+      {x:0.01, y:100},
+      {x:0.02, y:180},
+      {x:0.03, y:220},
+      {x:0.05, y:250}
+    ]
+  },
+
+  copper: {
+    fracture_toughness: "40 MPa√m",
+    tensile_strength: "220 MPa",
+    youngs_modulus: "110 GPa",
+    poisson_ratio: "0.34",
+    stress_strain: [
+      {x:0, y:0},
+      {x:0.01, y:120},
+      {x:0.02, y:180},
+      {x:0.03, y:200},
+      {x:0.05, y:220}
+    ]
+  }
+};
+
+// ===== 狀態控制 =====
+let step = 0;
+let chartInstance = null;
+
+// ===== Enter 事件 =====
+document.getElementById("materialInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    const input = this.value.toLowerCase().trim();
+    const data = materials[input];
+
+    if (!data) {
+      alert("Material not found!");
+      return;
+    }
+
+    if (step === 0) {
+      showProperties(data, input);
+      step = 1;
+    } else {
+      showGraph(data);
+      step = 0;
+    }
+  }
+});
+
+// ===== 顯示機械性質 =====
+function showProperties(data, name) {
+  const popup = document.getElementById("popup1");
+
+  popup.innerHTML = `
+    <h2>${name.toUpperCase()}</h2>
+    <p><b>Fracture Toughness:</b> ${data.fracture_toughness}</p>
+    <p><b>Tensile Strength:</b> ${data.tensile_strength}</p>
+    <p><b>Young's Modulus:</b> ${data.youngs_modulus}</p>
+    <p><b>Poisson Ratio:</b> ${data.poisson_ratio}</p>
+    <p style="color:gray;">Press Enter again to see stress-strain curve</p>
+  `;
+
+  popup.classList.remove("hidden");
+}
+
+// ===== 顯示應力應變曲線 =====
+function showGraph(data) {
+
+  document.getElementById("popup1").classList.add("hidden");
+
+  const popup2 = document.getElementById("popup2");
+  popup2.classList.remove("hidden");
+
+  const ctx = document.getElementById("chart").getContext("2d");
+
+  // 防止重疊圖表
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "Stress-Strain Curve",
+        data: data.stress_strain,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.2
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: "Strain" }
+        },
+        y: {
+          title: { display: true, text: "Stress (MPa)" }
+        }
+      }
+    }
+  });
+}
+
+</script>
+
+</body>
+</html>
